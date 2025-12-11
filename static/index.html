@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neo-Core AI Interface</title>
+    <style>
+        :root {
+            --bg-color: #050510;
+            --chat-bg: #0a0a1a;
+            --user-msg: #00f2ea;
+            --bot-msg: #ff0055;
+            --text-color: #e0e0e0;
+            --neon-glow-blue: 0 0 10px #00f2ea, 0 0 20px #00f2ea;
+            --neon-glow-pink: 0 0 10px #ff0055, 0 0 20px #ff0055;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #chat-container {
+            width: 90%;
+            max-width: 600px;
+            height: 80vh;
+            background: rgba(10, 10, 26, 0.8);
+            border: 1px solid #333;
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Cyberpunk decorations */
+        #chat-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00f2ea, transparent);
+            animation: scanline 3s infinite linear;
+        }
+
+        @keyframes scanline {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        header {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid #333;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            background: linear-gradient(90deg, #00f2ea, #ff0055);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.1);
+        }
+
+        #messages-area {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            scrollbar-width: thin;
+            scrollbar-color: #333 #0a0a1a;
+        }
+
+        #messages-area::-webkit-scrollbar {
+            width: 8px;
+        }
+        #messages-area::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 4px;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            line-height: 1.4;
+            font-size: 0.95rem;
+            position: relative;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .user-message {
+            align-self: flex-end;
+            background: rgba(0, 242, 234, 0.1);
+            border: 1px solid rgba(0, 242, 234, 0.3);
+            color: #fff;
+            box-shadow: 0 0 5px rgba(0, 242, 234, 0.2);
+            border-bottom-right-radius: 2px;
+        }
+
+        .bot-message {
+            align-self: flex-start;
+            background: rgba(255, 0, 85, 0.1);
+            border: 1px solid rgba(255, 0, 85, 0.3);
+            color: #fff;
+            box-shadow: 0 0 5px rgba(255, 0, 85, 0.2);
+            border-bottom-left-radius: 2px;
+        }
+
+        #input-area {
+            padding: 20px;
+            border-top: 1px solid #333;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            gap: 10px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #444;
+            background: #111;
+            color: #fff;
+            outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        input[type="text"]:focus {
+            border-color: #00f2ea;
+            box-shadow: 0 0 10px rgba(0, 242, 234, 0.3);
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #00f2ea, #00c2bb);
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px rgba(0, 242, 234, 0.5);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .typing-indicator {
+            display: none;
+            align-self: flex-start;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px 15px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            font-size: 0.8rem;
+            color: #aaa;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .typing-indicator span {
+            display: inline-block;
+            width: 4px;
+            height: 4px;
+            background-color: #aaa;
+            border-radius: 50%;
+            animation: typing 1.4s infinite ease-in-out both;
+            margin: 0 2px;
+        }
+
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        /* Markdown-like simple styling */
+        .bot-message p { margin: 5px 0; }
+        .bot-message strong { color: #ff0055; }
+
+    </style>
+</head>
+<body>
+
+    <div id="chat-container">
+        <header>
+            <h1>Neo-Core AI</h1>
+        </header>
+
+        <div id="messages-area">
+            <!-- Messages will appear here -->
+            <div class="message bot-message">
+                Hola. Soy Neo-Core v1.0. Sistemas en línea. ¿En qué puedo asistirte hoy?
+            </div>
+        </div>
+
+        <div class="typing-indicator" id="typing-indicator">
+            Escribiendo <span></span><span></span><span></span>
+        </div>
+
+        <div id="input-area">
+            <input type="text" id="message-input" placeholder="Escribe tu comando...">
+            <button id="send-btn">Enviar</button>
+        </div>
+    </div>
+
+    <script>
+        const messageInput = document.getElementById('message-input');
+        const sendBtn = document.getElementById('send-btn');
+        const messagesArea = document.getElementById('messages-area');
+        const typingIndicator = document.getElementById('typing-indicator');
+
+        // Función para agregar mensajes
+        function addMessage(text, sender) {
+            const div = document.createElement('div');
+            div.classList.add('message');
+            div.classList.add(sender === 'user' ? 'user-message' : 'bot-message');
+            
+            // Simple text rendering. Para Markdown completo se necesitaría una librería.
+            // Reemplazamos saltos de línea por <br>
+            div.innerHTML = text.replace(/\n/g, '<br>');
+            
+            messagesArea.appendChild(div);
+            scrollToBottom();
+        }
+
+        function scrollToBottom() {
+            messagesArea.scrollTop = messagesArea.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const text = messageInput.value.trim();
+            if (!text) return;
+
+            // 1. Mostrar mensaje del usuario
+            addMessage(text, 'user');
+            messageInput.value = '';
+            
+            // 2. Mostrar indicador de carga
+            typingIndicator.style.display = 'block';
+            scrollToBottom();
+
+            try {
+                // 3. Petición al backend
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ mensaje: text })
+                });
+
+                const data = await response.json();
+
+                // 4. Ocultar indicador y mostrar respuesta
+                typingIndicator.style.display = 'none';
+                
+                if (data.respuesta) {
+                    addMessage(data.respuesta, 'bot');
+                } else if (data.detail) {
+                    addMessage("Error del sistema: " + data.detail, 'bot');
+                } else {
+                    addMessage("Error desconocido en la matriz.", 'bot');
+                }
+
+            } catch (error) {
+                typingIndicator.style.display = 'none';
+                addMessage("Error de conexión: " + error.message, 'bot');
+            }
+        }
+
+        // Event Listeners
+        sendBtn.addEventListener('click', sendMessage);
+
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+
+</body>
+</html>
