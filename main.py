@@ -105,15 +105,16 @@ app.add_middleware(
 )
 
 # Pydantic Model
-class ChatRequest(BaseModel):
-    mensaje: str
+# Pydantic Model
+class Message(BaseModel):
+    text: str
 
 @app.get("/")
 def read_root():
     return FileResponse('static/index.html')
 
 @app.post("/chat")
-async def chat_endpoint(request: ChatRequest, background_tasks: BackgroundTasks):
+async def chat_endpoint(message: Message, background_tasks: BackgroundTasks):
     try:
         # Leemos el modelo del .env y limpiamos espacios con .strip() por seguridad
         model_name = os.getenv("GEMINI_MODEL", "gemini-1.5-flash").strip()
@@ -124,7 +125,7 @@ async def chat_endpoint(request: ChatRequest, background_tasks: BackgroundTasks)
             system_instruction=SYSTEM_INSTRUCTION
         )
         
-        response = model.generate_content(request.mensaje)
+        response = model.generate_content(message.text)
         respuesta_texto = response.text
 
         # Detectar y procesar LEAD
@@ -144,7 +145,7 @@ async def chat_endpoint(request: ChatRequest, background_tasks: BackgroundTasks)
                     nuevo_lead = Lead(
                         nombre=nombre_lead, 
                         contacto=contacto_lead,
-                        mensaje_original=request.mensaje
+                        mensaje_original=message.text
                     )
                     db.add(nuevo_lead)
                     db.commit()
@@ -161,7 +162,7 @@ async def chat_endpoint(request: ChatRequest, background_tasks: BackgroundTasks)
                 respuesta_texto = respuesta_texto.replace(f"||LEAD:{partes[1].split('||')[0]}||", "")
                 respuesta_texto = respuesta_texto.strip()
 
-        return {"respuesta": respuesta_texto}
+        return {"response": respuesta_texto}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
